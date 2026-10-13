@@ -1,0 +1,16 @@
+# Dependencies and Next.js build output
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+src/generated/prisma/
+
+# Local environment files may contain secrets.
+.env
+.env.*
+!.env.example
+
+# Local logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
