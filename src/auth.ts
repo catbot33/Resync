@@ -10,6 +10,9 @@ import { prisma } from "@/lib/prisma";
 
 const prismaAdapter = PrismaAdapter(prisma);
 
+// Keep authenticated users signed in across browser restarts for 30 days.
+const SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: {
     ...prismaAdapter,
@@ -34,6 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: "jwt",
+    maxAge: SESSION_MAX_AGE_SECONDS,
   },
   pages: {
     signIn: "/",
