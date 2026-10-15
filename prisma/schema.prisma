@@ -96,6 +96,7 @@ model Reservation {
   id             String            @id @default(cuid())
   purpose        String?
   attendeeCount  Int               @default(1)
+  resourceUnit   Int               @default(1)
   startTime      DateTime
   endTime        DateTime
   status         ReservationStatus @default(CONFIRMED)
@@ -110,6 +111,7 @@ model Reservation {
 
   @@index([organizationId, startTime])
   @@index([resourceId, startTime, endTime])
+  @@index([resourceId, resourceUnit, startTime, endTime])
   @@index([userId, startTime])
 }
 

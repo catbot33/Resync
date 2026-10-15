@@ -94,7 +94,7 @@ export async function getMemberReservations(organizationId: string, userId: stri
     select: {
       id: true,
       purpose: true,
-      attendeeCount: true,
+      resourceUnit: true,
       startTime: true,
       endTime: true,
       status: true,

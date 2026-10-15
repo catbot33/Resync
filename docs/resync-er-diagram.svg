@@ -1,0 +1,196 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1300" viewBox="0 0 1800 1300" role="img" aria-labelledby="title description">
+  <title id="title">Resync entity relationship diagram</title>
+  <desc id="description">Database entities for organizations, users, resources, reservations, categories, and Auth.js records, connected by their one-to-one and one-to-many relationships.</desc>
+  <defs>
+    <style>
+      .canvas { fill: #0b0c0d; }
+      .surface { fill: #111315; stroke: #2e3238; stroke-width: 2; }
+      .header { fill: #181a1d; }
+      .core-header { fill: #202328; }
+      .divider { stroke: #2e3238; stroke-width: 1; }
+      .relationship { fill: none; stroke: #6b7280; stroke-width: 2.5; }
+      .relationship-core { fill: none; stroke: #22c55e; stroke-width: 3; }
+      .relationship-auth { fill: none; stroke: #52525b; stroke-width: 2; stroke-dasharray: 7 6; }
+      .title { fill: #f9fafb; font-family: Inter, Arial, sans-serif; font-size: 42px; font-weight: 700; }
+      .subtitle { fill: #9ca3af; font-family: Inter, Arial, sans-serif; font-size: 20px; }
+      .entity { fill: #f4f4f5; font-family: Inter, Arial, sans-serif; font-size: 23px; font-weight: 700; }
+      .field { fill: #d4d4d8; font-family: "SFMono-Regular", Consolas, monospace; font-size: 17px; }
+      .key { fill: #86efac; font-family: "SFMono-Regular", Consolas, monospace; font-size: 17px; font-weight: 700; }
+      .muted { fill: #71717a; font-family: Inter, Arial, sans-serif; font-size: 16px; }
+      .relation-label { fill: #d4d4d8; font-family: Inter, Arial, sans-serif; font-size: 16px; font-weight: 600; }
+      .label-bg { fill: #0b0c0d; }
+      .legend-title { fill: #f4f4f5; font-family: Inter, Arial, sans-serif; font-size: 18px; font-weight: 700; }
+      .legend { fill: #a1a1aa; font-family: Inter, Arial, sans-serif; font-size: 16px; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1800" height="1300" />
+
+  <text class="title" x="70" y="75">Resync database relationships</text>
+  <text class="subtitle" x="70" y="111">Key entities and relationships from the Prisma/PostgreSQL schema</text>
+
+  <!-- Relationships are drawn first so entity boxes remain visually dominant. -->
+  <path class="relationship-core" d="M 500 255 C 585 215, 615 205, 700 205" />
+  <rect class="label-bg" x="535" y="188" width="132" height="30" rx="6" />
+  <text class="relation-label" x="601" y="209" text-anchor="middle">owns 1 : 0..1</text>
+
+  <path class="relationship-core" d="M 700 330 C 610 355, 585 390, 500 405" />
+  <rect class="label-bg" x="536" y="348" width="134" height="30" rx="6" />
+  <text class="relation-label" x="603" y="369" text-anchor="middle">members 1 : N</text>
+
+  <path class="relationship-core" d="M 1100 215 C 1180 195, 1220 195, 1300 215" />
+  <rect class="label-bg" x="1154" y="179" width="116" height="30" rx="6" />
+  <text class="relation-label" x="1212" y="200" text-anchor="middle">defines 1 : N</text>
+
+  <path class="relationship-core" d="M 1005 370 C 1095 465, 1175 540, 1260 635" />
+  <rect class="label-bg" x="1085" y="473" width="126" height="30" rx="6" />
+  <text class="relation-label" x="1148" y="494" text-anchor="middle">manages 1 : N</text>
+
+  <path class="relationship-core" d="M 1500 390 C 1500 455, 1485 500, 1475 560" />
+  <rect class="label-bg" x="1510" y="453" width="114" height="30" rx="6" />
+  <text class="relation-label" x="1567" y="474" text-anchor="middle">groups 1 : N</text>
+
+  <path class="relationship-core" d="M 900 370 C 900 475, 895 565, 890 680" />
+  <rect class="label-bg" x="916" y="505" width="118" height="30" rx="6" />
+  <text class="relation-label" x="975" y="526" text-anchor="middle">records 1 : N</text>
+
+  <path class="relationship-core" d="M 500 430 C 585 545, 650 655, 715 730" />
+  <rect class="label-bg" x="532" y="545" width="112" height="30" rx="6" />
+  <text class="relation-label" x="588" y="566" text-anchor="middle">creates 1 : N</text>
+
+  <path class="relationship-core" d="M 1260 735 C 1210 760, 1175 790, 1140 820" />
+  <rect class="label-bg" x="1124" y="746" width="128" height="30" rx="6" />
+  <text class="relation-label" x="1188" y="767" text-anchor="middle">reserved 1 : N</text>
+
+  <path class="relationship-auth" d="M 270 500 C 245 550, 240 575, 240 630" />
+  <rect class="label-bg" x="260" y="548" width="134" height="30" rx="6" />
+  <text class="relation-label" x="327" y="569" text-anchor="middle">accounts 1 : N</text>
+
+  <path class="relationship-auth" d="M 385 500 C 500 620, 480 965, 375 1035" />
+  <rect class="label-bg" x="498" y="752" width="128" height="30" rx="6" />
+  <text class="relation-label" x="562" y="773" text-anchor="middle">sessions 1 : N</text>
+
+  <!-- User -->
+  <g aria-label="User entity">
+    <rect class="surface" x="80" y="155" width="420" height="345" rx="18" />
+    <path class="core-header" d="M 98 155 H 482 A 18 18 0 0 1 500 173 V 217 H 80 V 173 A 18 18 0 0 1 98 155 Z" />
+    <text class="entity" x="110" y="196">User</text>
+    <text class="muted" x="470" y="196" text-anchor="end">admin or member</text>
+    <line class="divider" x1="80" y1="217" x2="500" y2="217" />
+    <text class="key" x="110" y="253">PK  id</text>
+    <text class="field" x="110" y="286">username  UNIQUE?</text>
+    <text class="field" x="110" y="319">email  UNIQUE?</text>
+    <text class="field" x="110" y="352">passwordHash?</text>
+    <text class="field" x="110" y="385">role  ADMIN | MEMBER</text>
+    <text class="field" x="110" y="418">isActive  Boolean</text>
+    <text class="key" x="110" y="451">FK  organizationId?</text>
+    <text class="muted" x="110" y="480">Profile and access identity</text>
+  </g>
+
+  <!-- Organization -->
+  <g aria-label="Organization entity">
+    <rect class="surface" x="700" y="140" width="400" height="230" rx="18" />
+    <path class="core-header" d="M 718 140 H 1082 A 18 18 0 0 1 1100 158 V 202 H 700 V 158 A 18 18 0 0 1 718 140 Z" />
+    <text class="entity" x="730" y="181">Organization</text>
+    <text class="muted" x="1070" y="181" text-anchor="end">workspace</text>
+    <line class="divider" x1="700" y1="202" x2="1100" y2="202" />
+    <text class="key" x="730" y="238">PK  id</text>
+    <text class="field" x="730" y="271">name / normalizedName</text>
+    <text class="field" x="730" y="304">timezone / shifts JSON</text>
+    <text class="key" x="730" y="337">FK  ownerId  UNIQUE</text>
+  </g>
+
+  <!-- Resource category -->
+  <g aria-label="Resource category entity">
+    <rect class="surface" x="1300" y="145" width="400" height="245" rx="18" />
+    <path class="header" d="M 1318 145 H 1682 A 18 18 0 0 1 1700 163 V 207 H 1300 V 163 A 18 18 0 0 1 1318 145 Z" />
+    <text class="entity" x="1330" y="186">ResourceCategory</text>
+    <line class="divider" x1="1300" y1="207" x2="1700" y2="207" />
+    <text class="key" x="1330" y="243">PK  id</text>
+    <text class="field" x="1330" y="276">name</text>
+    <text class="field" x="1330" y="309">normalizedName</text>
+    <text class="key" x="1330" y="342">FK  organizationId</text>
+    <text class="muted" x="1330" y="373">Unique within an organization</text>
+  </g>
+
+  <!-- Resource -->
+  <g aria-label="Resource entity">
+    <rect class="surface" x="1260" y="560" width="440" height="330" rx="18" />
+    <path class="core-header" d="M 1278 560 H 1682 A 18 18 0 0 1 1700 578 V 622 H 1260 V 578 A 18 18 0 0 1 1278 560 Z" />
+    <text class="entity" x="1290" y="601">Resource</text>
+    <text class="muted" x="1670" y="601" text-anchor="end">reservable item</text>
+    <line class="divider" x1="1260" y1="622" x2="1700" y2="622" />
+    <text class="key" x="1290" y="658">PK  id</text>
+    <text class="field" x="1290" y="691">name / type</text>
+    <text class="field" x="1290" y="724">quantity</text>
+    <text class="field" x="1290" y="757">location</text>
+    <text class="field" x="1290" y="790">isActive  Boolean</text>
+    <text class="key" x="1290" y="823">FK  organizationId</text>
+    <text class="key" x="1290" y="856">FK  categoryId?</text>
+  </g>
+
+  <!-- Reservation -->
+  <g aria-label="Reservation entity">
+    <rect class="surface" x="640" y="680" width="500" height="365" rx="18" />
+    <path class="core-header" d="M 658 680 H 1122 A 18 18 0 0 1 1140 698 V 742 H 640 V 698 A 18 18 0 0 1 658 680 Z" />
+    <text class="entity" x="670" y="721">Reservation</text>
+    <text class="muted" x="1110" y="721" text-anchor="end">booking record</text>
+    <line class="divider" x1="640" y1="742" x2="1140" y2="742" />
+    <text class="key" x="670" y="778">PK  id</text>
+    <text class="field" x="670" y="811">purpose?</text>
+    <text class="field" x="670" y="844">resourceUnit</text>
+    <text class="field" x="670" y="877">startTime / endTime</text>
+    <text class="field" x="670" y="910">status  PENDING | CONFIRMED | ...</text>
+    <text class="key" x="670" y="943">FK  organizationId</text>
+    <text class="key" x="670" y="976">FK  resourceId</text>
+    <text class="key" x="670" y="1009">FK  userId</text>
+  </g>
+
+  <!-- Account -->
+  <g aria-label="Account entity">
+    <rect class="surface" x="80" y="630" width="390" height="260" rx="18" />
+    <path class="header" d="M 98 630 H 452 A 18 18 0 0 1 470 648 V 692 H 80 V 648 A 18 18 0 0 1 98 630 Z" />
+    <text class="entity" x="110" y="671">Account</text>
+    <text class="muted" x="440" y="671" text-anchor="end">OAuth link</text>
+    <line class="divider" x1="80" y1="692" x2="470" y2="692" />
+    <text class="key" x="110" y="728">PK  id</text>
+    <text class="key" x="110" y="761">FK  userId</text>
+    <text class="field" x="110" y="794">provider</text>
+    <text class="field" x="110" y="827">providerAccountId</text>
+    <text class="muted" x="110" y="860">Google account and tokens</text>
+  </g>
+
+  <!-- Session -->
+  <g aria-label="Session entity">
+    <rect class="surface" x="80" y="1015" width="390" height="205" rx="18" />
+    <path class="header" d="M 98 1015 H 452 A 18 18 0 0 1 470 1033 V 1077 H 80 V 1033 A 18 18 0 0 1 98 1015 Z" />
+    <text class="entity" x="110" y="1056">Session</text>
+    <line class="divider" x1="80" y1="1077" x2="470" y2="1077" />
+    <text class="key" x="110" y="1113">PK  id</text>
+    <text class="field" x="110" y="1146">sessionToken  UNIQUE</text>
+    <text class="key" x="110" y="1179">FK  userId / expires</text>
+  </g>
+
+  <!-- Verification token -->
+  <g aria-label="Verification token entity">
+    <rect class="surface" x="1300" y="1015" width="400" height="205" rx="18" stroke-dasharray="7 6" />
+    <path class="header" d="M 1318 1015 H 1682 A 18 18 0 0 1 1700 1033 V 1077 H 1300 V 1033 A 18 18 0 0 1 1318 1015 Z" />
+    <text class="entity" x="1330" y="1056">VerificationToken</text>
+    <line class="divider" x1="1300" y1="1077" x2="1700" y2="1077" />
+    <text class="field" x="1330" y="1113">identifier</text>
+    <text class="key" x="1330" y="1146">token  UNIQUE</text>
+    <text class="field" x="1330" y="1179">expires</text>
+  </g>
+
+  <!-- Legend -->
+  <g aria-label="Diagram legend">
+    <text class="legend-title" x="640" y="1122">How to read it</text>
+    <text class="legend" x="640" y="1154">PK = primary key (unique record identity)</text>
+    <text class="legend" x="640" y="1182">FK = foreign key (link to another table)</text>
+    <text class="legend" x="640" y="1210">1 : N = one record can relate to many records</text>
+    <line class="relationship-core" x1="640" y1="1242" x2="720" y2="1242" />
+    <text class="legend" x="735" y="1248">core reservation relationship</text>
+    <line class="relationship-auth" x1="970" y1="1242" x2="1050" y2="1242" />
+    <text class="legend" x="1065" y="1248">authentication relationship</text>
+  </g>
+</svg>

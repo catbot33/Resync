@@ -12,6 +12,14 @@ export function addDaysToDateKey(dateKey: string, days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+// Use conversational labels only for dates immediately around today.
+export function relativeDateLabel(dateKey: string, todayKey: string) {
+  if (dateKey === todayKey) return "Today";
+  if (dateKey === addDaysToDateKey(todayKey, -1)) return "Yesterday";
+  if (dateKey === addDaysToDateKey(todayKey, 1)) return "Tomorrow";
+  return null;
+}
+
 export function startOfWeekDateKey(dateKey: string) {
   const [year, month, day] = dateKey.split("-").map(Number);
   const date = new Date(Date.UTC(year, month - 1, day));

@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "node server.mjs",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.mjs --production",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
@@ -28,6 +28,8 @@
     "next-auth": "^5.0.0-beta.32",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "socket.io": "^4.8.4",
+    "socket.io-client": "^4.8.4",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },

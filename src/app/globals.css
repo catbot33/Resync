@@ -37,8 +37,19 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
+}
+
+/* Every dropdown uses the same neutral arrow with consistent edge spacing. */
+select:not([multiple]) {
+  appearance: none;
+  padding-right: 3rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
 }
 
 button {
@@ -89,6 +100,17 @@ button {
 .onboarding-canvas button:focus-visible,
 .onboarding-canvas label:focus-within {
   --tw-ring-color: rgba(156, 163, 175, 0.6);
+}
+
+/* Keep native time controls comfortably sized and away from the input edge. */
+.onboarding-time-input::-webkit-calendar-picker-indicator {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.5rem;
+  margin-right: 0.125rem;
+  padding: 0.125rem;
+  cursor: pointer;
+  opacity: 0.72;
 }
 
 .dashboard-canvas {

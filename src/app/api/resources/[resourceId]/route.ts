@@ -1,3 +1,4 @@
+import { ReservationStatus } from "@/generated/prisma/client";
 import { getAdminOrganization } from "@/lib/auth/admin-organization";
 import { prisma } from "@/lib/prisma";
 import { normalizeCategoryName, resourceUpdateSchema } from "@/lib/resources/validation";
@@ -35,6 +36,22 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   try {
+    if (parsed.data.quantity !== undefined) {
+      const reservationOnRemovedUnit = await prisma.reservation.findFirst({
+        where: {
+          resourceId: existing.id,
+          resourceUnit: { gt: parsed.data.quantity },
+          status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
+          endTime: { gt: new Date() },
+        },
+        select: { id: true },
+      });
+
+      if (reservationOnRemovedUnit) {
+        return Response.json({ message: "Move or cancel future bookings on higher-numbered units before reducing the quantity." }, { status: 409 });
+      }
+    }
+
     let category: { id: string; name: string } | undefined;
 
     if (parsed.data.categoryName) {

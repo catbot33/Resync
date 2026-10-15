@@ -7,7 +7,8 @@ export async function getAdminEmployees(organizationId: string) {
   const now = new Date();
   const employees = await prisma.user.findMany({
     where: { organizationId, role: UserRole.MEMBER },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }, { username: "asc" }],
+    // Keep rows stable when the status toggle changes.
+    orderBy: [{ name: "asc" }, { username: "asc" }],
     include: {
       reservations: {
         orderBy: { startTime: "desc" },

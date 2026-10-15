@@ -3,13 +3,13 @@
 import {
   CalendarClock,
   CalendarRange,
-  Check,
   Eye,
   EyeOff,
   KeyRound,
   Pencil,
   Plus,
   Search,
+  Trash2,
   UserCheck,
   UsersRound,
   UserX,
@@ -83,11 +83,12 @@ function formatDate(value: string, timezone: string, withTime = false) {
 export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("active");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [editing, setEditing] = useState<EmployeeItem | "new" | null>(null);
   const [draft, setDraft] = useState<EmployeeDraft>(emptyDraft);
   const [resetTarget, setResetTarget] = useState<EmployeeItem | null>(null);
   const [reservationTarget, setReservationTarget] = useState<EmployeeItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<EmployeeItem | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -158,6 +159,26 @@ export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerP
     }
   }
 
+  async function deleteEmployee() {
+    if (!deleteTarget) return;
+    setBusy(true);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/employees/${deleteTarget.id}`, { method: "DELETE" });
+      const result = response.status === 204 ? null : await response.json();
+      if (!response.ok) throw new Error(result?.message ?? "We could not delete the employee.");
+
+      setDeleteTarget(null);
+      router.refresh();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "We could not delete the employee.");
+      setDeleteTarget(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resetPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!resetTarget) return;
@@ -214,7 +235,7 @@ export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerP
       <section className="mt-5 overflow-hidden rounded-[26px] border border-[#24272b] bg-[#111315]">
         <div className="flex flex-col gap-3 border-b border-[#24272b] p-4 sm:flex-row sm:items-center sm:p-5">
           <label className="relative flex-1"><span className="sr-only">Search employees</span><Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><input className="h-11 w-full rounded-xl border border-[#30343a] bg-[#181a1d] pl-10 pr-3 text-sm text-white outline-none placeholder:text-zinc-700 focus:border-zinc-500" onChange={(event) => setSearch(event.target.value)} placeholder="Search by name or username" value={search} /></label>
-          <select aria-label="Filter by status" className="h-11 rounded-xl border border-[#30343a] bg-[#181a1d] px-3 text-sm text-zinc-300 outline-none focus:border-zinc-500" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}><option value="active">Active</option><option value="inactive">Inactive</option><option value="all">All statuses</option></select>
+          <select aria-label="Filter by status" className="h-11 rounded-xl border border-[#30343a] bg-[#181a1d] px-3 text-sm text-zinc-300 outline-none focus:border-zinc-500" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}><option value="all">All statuses</option><option value="active">Active</option><option value="inactive">Inactive</option></select>
         </div>
 
         {filteredEmployees.length === 0 ? (
@@ -226,7 +247,20 @@ export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerP
                 <article className="p-4" key={employee.id}>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex min-w-0 items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl border border-[#30343a] bg-[#181a1d] text-xs font-semibold text-zinc-400">{employee.name.slice(0, 1).toUpperCase()}</span><div className="min-w-0"><p className="truncate text-sm font-medium text-zinc-200">{employee.name}</p><p className="mt-1 truncate text-xs text-zinc-600">@{employee.username}</p></div></div>
-                    <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#30343a] bg-[#181a1d] px-2.5 py-1 text-xs text-zinc-400"><span className={`size-1.5 rounded-full ${employee.isActive ? "bg-zinc-300" : "bg-zinc-700"}`} />{employee.isActive ? "Active" : "Inactive"}</span>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button
+                        aria-checked={employee.isActive}
+                        aria-label={`${employee.isActive ? "Deactivate" : "Activate"} ${employee.name}`}
+                        className={`relative h-7 w-12 shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${employee.isActive ? "border-zinc-300 bg-zinc-200" : "border-[#3a3f46] bg-[#24272b]"}`}
+                        disabled={busy}
+                        onClick={() => updateStatus(employee)}
+                        role="switch"
+                        type="button"
+                      >
+                        <span className={`absolute left-1 top-1 size-[18px] rounded-full transition-transform ${employee.isActive ? "translate-x-5 bg-[#181a1d]" : "translate-x-0 bg-zinc-500"}`} />
+                      </button>
+                      <span className="text-xs text-zinc-400">{employee.isActive ? "Active" : "Inactive"}</span>
+                    </div>
                   </div>
                   <div className="mt-4 flex items-center justify-between border-t border-[#24272b] pt-3">
                     <p className="text-xs text-zinc-600">{employee.reservationCount} reservations · {employee.upcomingCount} upcoming</p>
@@ -234,7 +268,7 @@ export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerP
                       <button aria-label={`View ${employee.name} reservations`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => setReservationTarget(employee)} type="button"><CalendarRange className="size-4" /></button>
                       <button aria-label={`Edit ${employee.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => openEmployeeForm(employee)} type="button"><Pencil className="size-4" /></button>
                       <button aria-label={`Reset ${employee.name} password`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => { setError(""); setNewPassword(""); setShowPassword(false); setResetTarget(employee); }} type="button"><KeyRound className="size-4" /></button>
-                      <button aria-label={`${employee.isActive ? "Deactivate" : "Activate"} ${employee.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" disabled={busy} onClick={() => updateStatus(employee)} type="button">{employee.isActive ? <UserX className="size-4" /> : <Check className="size-4" />}</button>
+                      <button aria-label={`Delete ${employee.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-red-950/40 hover:text-red-300" onClick={() => { setError(""); setDeleteTarget(employee); }} type="button"><Trash2 className="size-4" /></button>
                     </div>
                   </div>
                 </article>
@@ -248,13 +282,28 @@ export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerP
                   <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-xl border border-[#30343a] bg-[#181a1d] text-xs font-semibold text-zinc-400">{employee.name.slice(0, 1).toUpperCase()}</span><p className="text-sm font-medium text-zinc-200">{employee.name}</p></div></td>
                   <td className="px-4 py-4 text-sm text-zinc-500">@{employee.username}</td>
                   <td className="px-4 py-4"><p className="text-sm font-medium text-zinc-200">{employee.reservationCount}</p><p className="mt-1 text-xs text-zinc-600">{employee.upcomingCount} upcoming</p></td>
-                  <td className="px-4 py-4"><span className="inline-flex items-center gap-2 rounded-full border border-[#30343a] bg-[#181a1d] px-2.5 py-1 text-xs text-zinc-400"><span className={`size-1.5 rounded-full ${employee.isActive ? "bg-zinc-300" : "bg-zinc-700"}`} />{employee.isActive ? "Active" : "Inactive"}</span></td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        aria-checked={employee.isActive}
+                        aria-label={`${employee.isActive ? "Deactivate" : "Activate"} ${employee.name}`}
+                        className={`relative h-7 w-12 shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${employee.isActive ? "border-zinc-300 bg-zinc-200" : "border-[#3a3f46] bg-[#24272b]"}`}
+                        disabled={busy}
+                        onClick={() => updateStatus(employee)}
+                        role="switch"
+                        type="button"
+                      >
+                        <span className={`absolute left-1 top-1 size-[18px] rounded-full transition-transform ${employee.isActive ? "translate-x-5 bg-[#181a1d]" : "translate-x-0 bg-zinc-500"}`} />
+                      </button>
+                      <span className="text-xs text-zinc-400">{employee.isActive ? "Active" : "Inactive"}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-4 text-sm text-zinc-500">{formatDate(employee.createdAt, timezone)}</td>
                   <td className="px-5 py-4"><div className="flex justify-end gap-1">
                     <button aria-label={`View ${employee.name} reservations`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => setReservationTarget(employee)} type="button"><CalendarRange className="size-4" /></button>
                     <button aria-label={`Edit ${employee.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => openEmployeeForm(employee)} type="button"><Pencil className="size-4" /></button>
                     <button aria-label={`Reset ${employee.name} password`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => { setError(""); setNewPassword(""); setShowPassword(false); setResetTarget(employee); }} type="button"><KeyRound className="size-4" /></button>
-                    <button aria-label={`${employee.isActive ? "Deactivate" : "Activate"} ${employee.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" disabled={busy} onClick={() => updateStatus(employee)} type="button">{employee.isActive ? <UserX className="size-4" /> : <Check className="size-4" />}</button>
+                    <button aria-label={`Delete ${employee.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-red-950/40 hover:text-red-300" onClick={() => { setError(""); setDeleteTarget(employee); }} type="button"><Trash2 className="size-4" /></button>
                   </div></td>
                 </tr>
               ))}</tbody>
@@ -292,6 +341,13 @@ export function EmployeeManager({ employees, stats, timezone }: EmployeeManagerP
             ))}
           </div>
           <p className="mt-4 text-xs text-zinc-600">Showing up to 20 recent reservations.</p>
+        </Modal>
+      ) : null}
+
+      {deleteTarget ? (
+        <Modal onClose={() => setDeleteTarget(null)} title="Delete employee?">
+          <p className="mt-4 text-sm leading-6 text-zinc-500">Delete <span className="font-medium text-zinc-200">{deleteTarget.name}</span>? Employees with reservation history must be deactivated instead.</p>
+          <div className="mt-6 flex justify-end gap-2"><button className="h-10 rounded-xl border border-[#30343a] px-4 text-sm text-zinc-300" onClick={() => setDeleteTarget(null)} type="button">Cancel</button><button className="h-10 rounded-xl border border-red-900/60 bg-red-950/30 px-4 text-sm font-medium text-red-300 disabled:opacity-60" disabled={busy} onClick={deleteEmployee} type="button">{busy ? "Deleting…" : "Delete"}</button></div>
         </Modal>
       ) : null}
     </>

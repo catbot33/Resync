@@ -41,6 +41,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   const resourceId = parsed.data.resourceId ?? existing.resourceId;
+  const resourceUnit = parsed.data.resourceUnit ?? existing.resourceUnit;
   const bookingUserId = actor.role === UserRole.ADMIN ? (parsed.data.userId ?? existing.userId) : actor.userId;
 
   try {
@@ -56,11 +57,13 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         }),
       ]);
       if (!resource || !bookingUser) throw new ReservationReferenceError();
+      if (resourceUnit > resource.quantity) throw new ReservationReferenceError();
 
       const overlapping = await transaction.reservation.count({
         where: {
           id: { not: reservationId },
           resourceId,
+          resourceUnit,
           status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
           startTime: { lt: endTime },
           endTime: { gt: startTime },
@@ -72,11 +75,11 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         where: { id: reservationId },
         data: {
           resourceId,
+          resourceUnit,
           userId: bookingUserId,
           startTime,
           endTime,
           purpose: parsed.data.purpose === undefined ? existing.purpose : parsed.data.purpose || null,
-          attendeeCount: parsed.data.attendeeCount ?? existing.attendeeCount,
         },
       });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
@@ -84,10 +87,10 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return Response.json({ reservation });
   } catch (error) {
     if (error instanceof ReservationConflictError || (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034")) {
-      return Response.json({ message: "That resource is already fully reserved for this time." }, { status: 409 });
+      return Response.json({ message: "That unit is already reserved for this time." }, { status: 409 });
     }
     if (error instanceof ReservationReferenceError) {
-      return Response.json({ message: "Choose an active resource and employee in your organization." }, { status: 400 });
+      return Response.json({ message: "Choose a valid resource unit and employee in your organization." }, { status: 400 });
     }
     console.error("Reservation update failed", error);
     return Response.json({ message: "We could not update the reservation." }, { status: 500 });

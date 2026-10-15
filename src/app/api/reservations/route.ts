@@ -39,10 +39,12 @@ export async function POST(request: Request) {
         }),
       ]);
       if (!resource || !bookingUser) throw new ReservationReferenceError();
+      if (parsed.data.resourceUnit > resource.quantity) throw new ReservationReferenceError();
 
       const overlapping = await transaction.reservation.count({
         where: {
           resourceId: resource.id,
+          resourceUnit: parsed.data.resourceUnit,
           status: { in: [ReservationStatus.PENDING, ReservationStatus.CONFIRMED] },
           startTime: { lt: endTime },
           endTime: { gt: startTime },
@@ -54,11 +56,11 @@ export async function POST(request: Request) {
         data: {
           organizationId: actor.organizationId,
           resourceId: resource.id,
+          resourceUnit: parsed.data.resourceUnit,
           userId: bookingUser.id,
           startTime,
           endTime,
           purpose: parsed.data.purpose || null,
-          attendeeCount: parsed.data.attendeeCount,
           status: ReservationStatus.CONFIRMED,
         },
       });
@@ -67,10 +69,10 @@ export async function POST(request: Request) {
     return Response.json({ reservation }, { status: 201 });
   } catch (error) {
     if (error instanceof ReservationConflictError || (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034")) {
-      return Response.json({ message: "That resource is already fully reserved for this time." }, { status: 409 });
+      return Response.json({ message: "That unit is already reserved for this time." }, { status: 409 });
     }
     if (error instanceof ReservationReferenceError) {
-      return Response.json({ message: "Choose an active resource and employee in your organization." }, { status: 400 });
+      return Response.json({ message: "Choose a valid resource unit and employee in your organization." }, { status: 400 });
     }
     console.error("Reservation creation failed", error);
     return Response.json({ message: "We could not create the reservation." }, { status: 500 });

@@ -9,7 +9,8 @@ export async function getAdminResources(organizationId: string) {
   const [resources, categories] = await Promise.all([
     prisma.resource.findMany({
       where: { organizationId },
-      orderBy: [{ isActive: "desc" }, { name: "asc" }],
+      // Stable ordering prevents rows from jumping when their active state changes.
+      orderBy: [{ createdAt: "asc" }, { name: "asc" }],
       include: {
         category: { select: { id: true, name: true } },
         reservations: {

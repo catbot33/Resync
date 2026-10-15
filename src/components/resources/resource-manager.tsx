@@ -3,7 +3,6 @@
 import {
   Archive,
   Boxes,
-  Check,
   PackageCheck,
   Pencil,
   Plus,
@@ -14,6 +13,8 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
+
+import { CUSTOM_RESOURCE_TYPE, isStandardResourceType, RESOURCE_TYPES } from "@/lib/resources/types";
 
 interface ResourceItem {
   id: string;
@@ -47,7 +48,7 @@ type ResourceDraft = Pick<ResourceItem, "name" | "categoryName" | "quantity" | "
 
 const emptyDraft: ResourceDraft = {
   name: "",
-  categoryName: "",
+  categoryName: RESOURCE_TYPES[0],
   quantity: 1,
   location: "",
   isActive: true,
@@ -71,11 +72,30 @@ function Modal({ children, onClose, title }: { children: React.ReactNode; onClos
 
 const fieldClass = "mt-2 h-11 w-full rounded-xl border border-[#30343a] bg-[#181a1d] px-3.5 text-sm text-white outline-none transition placeholder:text-zinc-700 focus:border-zinc-500";
 
+function getSearchScore(resource: ResourceItem, term: string) {
+  const name = resource.name.toLocaleLowerCase("en-US");
+  const category = resource.categoryName.toLocaleLowerCase("en-US");
+  const location = resource.location.toLocaleLowerCase("en-US");
+
+  // Rank direct name matches ahead of matches found later in a name or metadata.
+  if (name === term) return 0;
+  if (name.startsWith(term)) return 1;
+  if (name.split(/\s+/).some((word) => word.startsWith(term))) return 2;
+  if (name.includes(term)) return 3;
+  if (category === term) return 4;
+  if (category.startsWith(term)) return 5;
+  if (category.includes(term)) return 6;
+  if (location.startsWith(term)) return 7;
+  if (location.includes(term)) return 8;
+  return Number.POSITIVE_INFINITY;
+}
+
 export function ResourceManager({ categories, initialResources, stats }: ResourceManagerProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("active");
+  // Show both states by default so toggling a row does not remove it from view.
+  const [statusFilter, setStatusFilter] = useState("all");
   const [editing, setEditing] = useState<ResourceItem | "new" | null>(null);
   const [draft, setDraft] = useState<ResourceDraft>(emptyDraft);
   const [categoryPanel, setCategoryPanel] = useState(false);
@@ -83,16 +103,24 @@ export function ResourceManager({ categories, initialResources, stats }: Resourc
   const [deleteTarget, setDeleteTarget] = useState<ResourceItem | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const usesCustomType = !isStandardResourceType(draft.categoryName);
 
   const filteredResources = useMemo(() => {
     const term = search.trim().toLocaleLowerCase("en-US");
 
-    return initialResources.filter((resource) => {
-      const matchesTerm = !term || [resource.name, resource.categoryName, resource.location].some((value) => value.toLocaleLowerCase("en-US").includes(term));
+    const matchingFilters = initialResources.filter((resource) => {
       const matchesCategory = categoryFilter === "all" || resource.categoryId === categoryFilter;
       const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? resource.isActive : !resource.isActive);
-      return matchesTerm && matchesCategory && matchesStatus;
+      return matchesCategory && matchesStatus;
     });
+
+    if (!term) return matchingFilters;
+
+    return matchingFilters
+      .map((resource) => ({ resource, score: getSearchScore(resource, term) }))
+      .filter(({ score }) => Number.isFinite(score))
+      .sort((first, second) => first.score - second.score || first.resource.name.localeCompare(second.resource.name))
+      .map(({ resource }) => resource);
   }, [categoryFilter, initialResources, search, statusFilter]);
 
   function openResourceForm(resource?: ResourceItem) {
@@ -250,9 +278,9 @@ export function ResourceManager({ categories, initialResources, stats }: Resourc
             {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
           </select>
           <select aria-label="Filter by status" className="h-11 rounded-xl border border-[#30343a] bg-[#181a1d] px-3 text-sm text-zinc-300 outline-none focus:border-zinc-500" onChange={(event) => setStatusFilter(event.target.value)} value={statusFilter}>
+            <option value="all">All statuses</option>
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
-            <option value="all">All statuses</option>
           </select>
         </div>
 
@@ -274,12 +302,26 @@ export function ResourceManager({ categories, initialResources, stats }: Resourc
                 {filteredResources.map((resource) => (
                   <tr className="border-b border-[#202326] last:border-0" key={resource.id}>
                     <td className="px-5 py-4"><p className="text-sm font-medium text-zinc-200">{resource.name}</p><p className="mt-1 text-xs text-zinc-600">{resource.categoryName}</p></td>
-                    <td className="px-4 py-4 text-sm text-zinc-400">{resource.location}</td>
+                    <td className="px-4 py-4 text-sm text-zinc-400">{resource.location || "Not specified"}</td>
                     <td className="px-4 py-4"><p className="text-sm font-medium text-zinc-200">{resource.available} / {resource.quantity}</p><p className="mt-1 text-xs text-zinc-600">units available</p></td>
-                    <td className="px-4 py-4"><span className="inline-flex items-center gap-2 rounded-full border border-[#30343a] bg-[#181a1d] px-2.5 py-1 text-xs text-zinc-400"><span className={`size-1.5 rounded-full ${resource.isActive ? "bg-zinc-300" : "bg-zinc-700"}`} />{resource.isActive ? "Active" : "Inactive"}</span></td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <button
+                          aria-checked={resource.isActive}
+                          aria-label={`${resource.isActive ? "Deactivate" : "Activate"} ${resource.name}`}
+                          className={`relative h-7 w-12 shrink-0 rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${resource.isActive ? "border-zinc-300 bg-zinc-200" : "border-[#3a3f46] bg-[#24272b]"}`}
+                          disabled={busy}
+                          onClick={() => updateStatus(resource)}
+                          role="switch"
+                          type="button"
+                        >
+                          <span className={`absolute left-1 top-1 size-[18px] rounded-full transition-transform ${resource.isActive ? "translate-x-5 bg-[#181a1d]" : "translate-x-0 bg-zinc-500"}`} />
+                        </button>
+                        <span className="text-xs text-zinc-400">{resource.isActive ? "Active" : "Inactive"}</span>
+                      </div>
+                    </td>
                     <td className="px-5 py-4"><div className="flex justify-end gap-1">
                       <button aria-label={`Edit ${resource.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" onClick={() => openResourceForm(resource)} type="button"><Pencil className="size-4" /></button>
-                      <button aria-label={`${resource.isActive ? "Deactivate" : "Activate"} ${resource.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-[#202328] hover:text-white" disabled={busy} onClick={() => updateStatus(resource)} type="button">{resource.isActive ? <Archive className="size-4" /> : <Check className="size-4" />}</button>
                       <button aria-label={`Delete ${resource.name}`} className="grid size-9 place-items-center rounded-xl text-zinc-500 transition hover:bg-red-950/40 hover:text-red-300" onClick={() => setDeleteTarget(resource)} type="button"><Trash2 className="size-4" /></button>
                     </div></td>
                   </tr>
@@ -294,10 +336,32 @@ export function ResourceManager({ categories, initialResources, stats }: Resourc
         <Modal onClose={() => setEditing(null)} title={editing === "new" ? "Add resource" : "Edit resource"}>
           <form className="mt-6 space-y-4" onSubmit={saveResource}>
             <label className="block text-xs font-medium text-zinc-400">Resource name<input autoFocus className={fieldClass} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Meeting room A" required value={draft.name} /></label>
-            <label className="block text-xs font-medium text-zinc-400">Category<input className={fieldClass} list="resource-categories" onChange={(event) => setDraft({ ...draft, categoryName: event.target.value })} placeholder="Meeting room" required value={draft.categoryName} /><datalist id="resource-categories">{categories.map((category) => <option key={category.id} value={category.name} />)}</datalist></label>
+            <div className="text-xs font-medium text-zinc-400">
+              <label htmlFor="resource-type">Type / category</label>
+              <select
+                className={fieldClass}
+                id="resource-type"
+                onChange={(event) => setDraft({ ...draft, categoryName: event.target.value === CUSTOM_RESOURCE_TYPE ? "" : event.target.value })}
+                value={usesCustomType ? CUSTOM_RESOURCE_TYPE : draft.categoryName}
+              >
+                <option value={CUSTOM_RESOURCE_TYPE}>Custom</option>
+                {RESOURCE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+              {usesCustomType ? (
+                <input
+                  aria-label="Custom resource type"
+                  className={fieldClass}
+                  maxLength={60}
+                  onChange={(event) => setDraft({ ...draft, categoryName: event.target.value })}
+                  placeholder="Enter a custom type"
+                  required
+                  value={draft.categoryName}
+                />
+              ) : null}
+            </div>
             <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
               <label className="block text-xs font-medium text-zinc-400">Quantity<input className={fieldClass} min={1} onChange={(event) => setDraft({ ...draft, quantity: Number(event.target.value) })} required type="number" value={draft.quantity} /></label>
-              <label className="block text-xs font-medium text-zinc-400">Location<input className={fieldClass} onChange={(event) => setDraft({ ...draft, location: event.target.value })} placeholder="Second floor" required value={draft.location} /></label>
+              <label className="block text-xs font-medium text-zinc-400">Location <span className="font-normal text-zinc-600">(optional)</span><input className={fieldClass} onChange={(event) => setDraft({ ...draft, location: event.target.value })} placeholder="e.g. Floor 2, east wing" value={draft.location} /></label>
             </div>
             <label className="flex items-center gap-3 rounded-xl border border-[#30343a] bg-[#181a1d] px-4 py-3 text-sm text-zinc-300"><input checked={draft.isActive} className="size-4 accent-zinc-200" onChange={(event) => setDraft({ ...draft, isActive: event.target.checked })} type="checkbox" />Available for booking</label>
             {error ? <p className="text-sm text-red-300">{error}</p> : null}

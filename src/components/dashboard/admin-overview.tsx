@@ -143,11 +143,12 @@ export function AdminOverview({ data, organizationName, timezone, userName }: Ad
               </span>
             </div>
 
-            <div className="mt-5 space-y-3">
+            {/* Keep three resource rows visible and scroll only the remaining list. */}
+            <div className="mt-5 max-h-[288px] space-y-3 overflow-y-auto pr-2 [scrollbar-color:#343941_transparent] [scrollbar-width:thin]">
               {data.resources.length === 0 ? (
                 <EmptyState>No resources added yet.</EmptyState>
               ) : (
-                data.resources.slice(0, 6).map((resource) => {
+                data.resources.map((resource) => {
                   const percentage = resource.quantity === 0 ? 0 : Math.round((resource.available / resource.quantity) * 100);
 
                   return (
@@ -155,7 +156,7 @@ export function AdminOverview({ data, organizationName, timezone, userName }: Ad
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-zinc-200">{resource.name}</p>
-                          <p className="mt-1 truncate text-xs text-zinc-600">{resource.type} · {resource.location}</p>
+                          <p className="mt-1 truncate text-xs text-zinc-600">{resource.type}{resource.location ? ` · ${resource.location}` : ""}</p>
                         </div>
                         <p className="shrink-0 text-sm font-semibold text-white">{resource.available}/{resource.quantity}</p>
                       </div>
@@ -175,7 +176,8 @@ export function AdminOverview({ data, organizationName, timezone, userName }: Ad
               <p className="mt-1 text-xs text-zinc-600">Next confirmed or pending bookings</p>
             </div>
 
-            <div className="mt-5 space-y-3">
+            {/* Match the resource panel height while keeping up to ten bookings accessible. */}
+            <div className="mt-5 max-h-[288px] space-y-3 overflow-y-auto pr-2 [scrollbar-color:#343941_transparent] [scrollbar-width:thin]">
               {data.upcomingReservations.length === 0 ? (
                 <EmptyState>No upcoming reservations.</EmptyState>
               ) : (

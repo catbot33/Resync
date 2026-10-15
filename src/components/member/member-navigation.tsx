@@ -1,19 +1,19 @@
-import { CalendarDays, CalendarRange, Compass, LayoutDashboard, Settings } from "lucide-react";
+import { CalendarClock, CalendarDays, CalendarRange, Compass, Settings, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 
 import { SignOutButton } from "@/components/auth/sign-out-button";
 
-export type MemberSection = "dashboard" | "resources" | "reservations" | "calendar" | "settings";
+export type MemberSection = "booking" | "resources" | "reservations" | "calendar" | "settings";
 
 const items = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, href: "/member" },
+  { key: "booking", label: "Reservations", icon: CalendarClock, href: "/member" },
   { key: "resources", label: "Explore resources", icon: Compass, href: "/member/resources" },
   { key: "reservations", label: "My reservations", icon: CalendarRange, href: "/member/reservations" },
   { key: "calendar", label: "Calendar", icon: CalendarDays, href: "/member/calendar" },
   { key: "settings", label: "Profile & settings", icon: Settings, href: "/member/settings" },
 ] as const;
 
-function Item({ active, href, icon: Icon, label }: { active: boolean; href: string; icon: typeof LayoutDashboard; label: string }) {
+function Item({ active, href, icon: Icon, label }: { active: boolean; href: string; icon: LucideIcon; label: string }) {
   return (
     <Link aria-current={active ? "page" : undefined} aria-label={label} className={`group relative grid size-11 place-items-center rounded-2xl border transition ${active ? "border-[#42474f] bg-[#24272b] text-white" : "border-transparent text-zinc-500 hover:border-[#2e3238] hover:bg-[#24272b] hover:text-white"}`} href={href}>
       <Icon className="size-[19px]" strokeWidth={1.8} />

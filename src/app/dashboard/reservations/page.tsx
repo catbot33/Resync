@@ -46,8 +46,10 @@ export default async function ReservationsPage({ searchParams }: { searchParams:
         currentUserId={currentUser.id}
         dateKey={dateKey}
         endHour={schedule.endHour}
+        organizationId={currentUser.organization.id}
         people={schedule.people}
         resources={schedule.resources}
+        shifts={schedule.shifts}
         startHour={schedule.startHour}
         timezone={schedule.timezone}
       />

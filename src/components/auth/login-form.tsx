@@ -49,24 +49,37 @@ export function LoginForm() {
     event.preventDefault();
     setError("");
     setIsSubmitting(true);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-    const formData = new FormData(event.currentTarget);
-    const result = await signIn("credentials", {
-      username: formData.get("username"),
-      password: formData.get("password"),
-      role: role.toUpperCase(),
-      redirect: false,
-    });
+    try {
+      const formData = new FormData(event.currentTarget);
+      const timeout = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error("Sign-in timed out.")), 15_000);
+      });
+      const result = await Promise.race([
+        signIn("credentials", {
+          username: formData.get("username"),
+          password: formData.get("password"),
+          role: role.toUpperCase(),
+          redirect: false,
+        }),
+        timeout,
+      ]);
 
-    if (result.error) {
-      setError("The username, password, or account type is incorrect.");
+      if (result.error) {
+        setError("The username, password, or account type is incorrect.");
+        return;
+      }
+
+      // The dashboard decides whether an administrator still needs onboarding.
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("The server did not respond. Please try again.");
+    } finally {
+      clearTimeout(timeoutId);
       setIsSubmitting(false);
-      return;
     }
-
-    // The dashboard decides whether an administrator still needs onboarding.
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -74,12 +87,12 @@ export function LoginForm() {
       <div className="w-full max-w-[440px]">
         <BrandMark className="mb-10 lg:hidden" compact />
 
-        <div className="mb-8">
+        <div className="mb-6">
           <h2 className="text-3xl font-semibold tracking-[-0.04em] text-white sm:text-[34px]">{copy.title}</h2>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-zinc-400">{copy.description}</p>
+          <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">{copy.description}</p>
         </div>
 
-        <div aria-label="Choose account type" className="mb-7 grid grid-cols-2 rounded-xl border border-white/10 bg-[#111614] p-1" role="tablist">
+        <div aria-label="Choose account type" className="mb-6 grid grid-cols-2 rounded-xl border border-white/10 bg-[#111614] p-1" role="tablist">
           {(["member", "admin"] as const).map((item) => (
             <button
               aria-selected={role === item}
@@ -97,8 +110,8 @@ export function LoginForm() {
           ))}
         </div>
 
-        <form className="space-y-5" onSubmit={handleCredentialsSignIn}>
-          <div className="space-y-2">
+        <form className="space-y-4" onSubmit={handleCredentialsSignIn}>
+          <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-4">
               <label className="text-sm font-medium text-zinc-200" htmlFor={usernameId}>
                 Username
@@ -112,7 +125,7 @@ export function LoginForm() {
             <Input autoCapitalize="none" autoComplete="username" disabled={isSubmitting} id={usernameId} name="username" placeholder="Enter your username" required />
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-3">
             <label className="text-sm font-medium text-zinc-200" htmlFor={passwordId}>
               Password
             </label>

@@ -66,7 +66,7 @@ export async function getCalendarSchedule({
       select: {
         id: true,
         purpose: true,
-        attendeeCount: true,
+        resourceUnit: true,
         startTime: true,
         endTime: true,
         status: true,
@@ -91,7 +91,7 @@ export async function getCalendarSchedule({
     reservations: reservations.map((reservation) => ({
       id: reservation.id,
       purpose: reservation.purpose ?? "Reserved",
-      attendeeCount: reservation.attendeeCount,
+      resourceUnit: reservation.resourceUnit,
       startTime: reservation.startTime.toISOString(),
       endTime: reservation.endTime.toISOString(),
       status: reservation.status,

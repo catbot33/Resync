@@ -65,7 +65,7 @@ export async function getAdminOverview(organizationId: string) {
     prisma.reservation.findMany({
       where: upcomingReservationWhere,
       orderBy: { startTime: "asc" },
-      take: 5,
+      take: 10,
       select: {
         id: true,
         purpose: true,

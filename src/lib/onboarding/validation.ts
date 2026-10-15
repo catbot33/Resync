@@ -17,7 +17,7 @@ const resourceSchema = z.object({
   name: z.string().trim().min(1, "Resource name is required.").max(80),
   type: z.string().trim().min(1).max(50),
   quantity: z.number().int().min(1).max(1000),
-  location: z.string().trim().min(1, "Resource location is required.").max(120),
+  location: z.string().trim().max(120, "Keep the location under 120 characters."),
 });
 
 export const onboardingSchema = z.object({

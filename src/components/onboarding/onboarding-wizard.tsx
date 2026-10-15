@@ -20,6 +20,7 @@ import { BrandMark } from "@/components/auth/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CUSTOM_RESOURCE_TYPE, isStandardResourceType, RESOURCE_TYPES } from "@/lib/resources/types";
 import { cn } from "@/lib/utils";
 
 type ShiftName = "Morning" | "Evening" | "Night";
@@ -82,7 +83,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
   ]);
   const [visibleEmployeePasswords, setVisibleEmployeePasswords] = useState<Set<number>>(new Set());
   const [resources, setResources] = useState<ResourceDraft[]>([
-    { id: 1, name: "", type: "Meeting room", quantity: 1, location: "" },
+    { id: 1, name: "", type: RESOURCE_TYPES[0], quantity: 1, location: "" },
   ]);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -147,7 +148,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
       {
         id: nextResourceId.current++,
         name: "",
-        type: "Meeting room",
+        type: RESOURCE_TYPES[0],
         quantity: 1,
         location: "",
       },
@@ -211,7 +212,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
       return;
     }
 
-    if (step === 2 && resources.some((resource) => !resource.name.trim() || !resource.location.trim())) {
+    if (step === 2 && resources.some((resource) => !resource.name.trim() || !resource.type.trim())) {
       setError("Complete each resource or remove the unfinished entry.");
       return;
     }
@@ -285,7 +286,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
             </ol>
 
             <form onSubmit={continueToNextStep}>
-              <div className="mb-9 flex items-start justify-between gap-6">
+              <div className="mb-6 flex items-start justify-between gap-6">
                 <div>
                   <p className="text-sm font-medium text-zinc-500">Step {step + 1} of {steps.length}</p>
                   <h1 className="mt-2 max-w-xl text-3xl font-semibold leading-tight tracking-[-0.04em] text-white sm:text-4xl">
@@ -302,14 +303,14 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
               </div>
 
             {step === 0 ? (
-              <div className="space-y-7">
+              <div className="space-y-6">
                 <div className="grid gap-6 sm:grid-cols-[1fr_150px]">
-                  <div className="space-y-5">
-                    <div className="space-y-2">
+                  <div className="space-y-4">
+                    <div className="flex flex-col gap-3">
                       <FieldLabel htmlFor={companyNameId}>Organization name</FieldLabel>
                       <Input autoComplete="organization" id={companyNameId} onChange={(event) => setCompanyName(event.target.value)} placeholder="e.g. Northstar Studio" required value={companyName} />
                     </div>
-                    <div className="space-y-2">
+                    <div className="flex flex-col gap-3">
                       <FieldLabel htmlFor={descriptionId}>Description <span className="font-normal text-zinc-600">(optional)</span></FieldLabel>
                       <Textarea id={descriptionId} maxLength={240} onChange={(event) => setDescription(event.target.value)} placeholder="What does your organization do?" value={description} />
                     </div>
@@ -317,7 +318,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
 
                   <div className="flex flex-col items-center sm:items-stretch">
                     <span className="text-sm font-medium text-zinc-200">Company logo</span>
-                    <label className="mt-2 flex min-h-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#2e3238] bg-[#111315] text-center transition hover:border-[#4b5563] hover:bg-[#181a1d] focus-within:ring-2 focus-within:ring-zinc-400/60" htmlFor={logoId}>
+                    <label className="mt-3 flex min-h-[150px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-[#2e3238] bg-[#111315] text-center transition hover:border-[#4b5563] hover:bg-[#181a1d] focus-within:ring-2 focus-within:ring-zinc-400/60" htmlFor={logoId}>
                       {logoPreview ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img alt="Company logo preview" className="size-full object-cover" src={logoPreview} />
@@ -351,7 +352,7 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                   </div>
                 </fieldset>
 
-                <div className="space-y-2">
+                <div className="flex flex-col gap-3">
                   <FieldLabel htmlFor={timezoneId}>Time zone</FieldLabel>
                   <select className={selectClassName} id={timezoneId} onChange={(event) => setTimezone(event.target.value)} value={timezone}>
                     <option value="Asia/Karachi">Pakistan Standard Time — Karachi</option>
@@ -374,13 +375,13 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                         <div className="rounded-2xl border border-[#2e3238] bg-[#111315] p-4" key={shift}>
                           <p className="text-sm font-semibold text-zinc-200">{shift}</p>
                           <div className="mt-3 grid grid-cols-2 gap-3">
-                            <label className="space-y-1.5 text-xs text-zinc-500">
+                            <label className="grid gap-3 text-xs text-zinc-500">
                               Starts
-                              <Input aria-label={`${shift} shift starts`} className="px-3" onChange={(event) => setShiftTimes((current) => ({ ...current, [shift]: { ...current[shift], start: event.target.value } }))} type="time" value={shiftTimes[shift].start} />
+                              <Input aria-label={`${shift} shift starts`} className="onboarding-time-input px-3" onChange={(event) => setShiftTimes((current) => ({ ...current, [shift]: { ...current[shift], start: event.target.value } }))} type="time" value={shiftTimes[shift].start} />
                             </label>
-                            <label className="space-y-1.5 text-xs text-zinc-500">
+                            <label className="grid gap-3 text-xs text-zinc-500">
                               Ends
-                              <Input aria-label={`${shift} shift ends`} className="px-3" onChange={(event) => setShiftTimes((current) => ({ ...current, [shift]: { ...current[shift], end: event.target.value } }))} type="time" value={shiftTimes[shift].end} />
+                              <Input aria-label={`${shift} shift ends`} className="onboarding-time-input px-3" onChange={(event) => setShiftTimes((current) => ({ ...current, [shift]: { ...current[shift], end: event.target.value } }))} type="time" value={shiftTimes[shift].end} />
                             </label>
                           </div>
                         </div>
@@ -413,11 +414,11 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                         </button>
                       </div>
                       <div className="mt-4 space-y-4">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-3">
                           <FieldLabel htmlFor={usernameId}>Username</FieldLabel>
                           <Input autoCapitalize="none" autoComplete="off" id={usernameId} onChange={(event) => updateEmployee(employee.id, "username", event.target.value)} placeholder="e.g. alex_chen" value={employee.username} />
                         </div>
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-3">
                           <FieldLabel htmlFor={passwordId}>Temporary password</FieldLabel>
                           <div className="relative">
                             <Input autoComplete="new-password" className="pr-12" id={passwordId} onChange={(event) => updateEmployee(employee.id, "password", event.target.value)} placeholder="At least 8 characters" type={visibleEmployeePasswords.has(employee.id) ? "text" : "password"} value={employee.password} />
@@ -449,6 +450,8 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
 
                 {resources.map((resource, index) => {
                   const prefix = `resource-${resource.id}`;
+                  // Values outside the standard list remain editable as custom types.
+                  const usesCustomType = !isStandardResourceType(resource.type);
 
                   return (
                     <div className="rounded-2xl border border-[#2e3238] bg-[#111315] p-5" key={resource.id}>
@@ -459,29 +462,41 @@ export function OnboardingWizard({ userName }: OnboardingWizardProps) {
                         </button>
                       </div>
                       <div className="mt-4 space-y-4">
-                        <div className="space-y-2">
+                        <div className="flex flex-col gap-3">
                           <FieldLabel htmlFor={`${prefix}-name`}>Resource name</FieldLabel>
                           <Input id={`${prefix}-name`} onChange={(event) => updateResource(resource.id, "name", event.target.value)} placeholder="e.g. Atlas room" value={resource.name} />
                         </div>
                         <div className="grid grid-cols-[1fr_110px] gap-3">
-                          <div className="space-y-2">
+                          <div className="flex flex-col gap-3">
                             <FieldLabel htmlFor={`${prefix}-type`}>Type</FieldLabel>
-                            <select className={selectClassName} id={`${prefix}-type`} onChange={(event) => updateResource(resource.id, "type", event.target.value)} value={resource.type}>
-                              <option>Meeting room</option>
-                              <option>Projector</option>
-                              <option>Conference hall</option>
-                              <option>Vehicle</option>
-                              <option>Equipment</option>
-                              <option>Other</option>
+                            <select
+                              className={selectClassName}
+                              id={`${prefix}-type`}
+                              onChange={(event) => updateResource(resource.id, "type", event.target.value === CUSTOM_RESOURCE_TYPE ? "" : event.target.value)}
+                              value={usesCustomType ? CUSTOM_RESOURCE_TYPE : resource.type}
+                            >
+                              <option value={CUSTOM_RESOURCE_TYPE}>Custom</option>
+                              {RESOURCE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}
                             </select>
+                            {usesCustomType ? (
+                              <Input
+                                aria-label={`Custom type for resource ${index + 1}`}
+                                autoFocus
+                                maxLength={50}
+                                onChange={(event) => updateResource(resource.id, "type", event.target.value)}
+                                placeholder="Enter a custom type"
+                                required
+                                value={resource.type}
+                              />
+                            ) : null}
                           </div>
-                          <div className="space-y-2">
+                          <div className="flex flex-col gap-3">
                             <FieldLabel htmlFor={`${prefix}-quantity`}>Quantity</FieldLabel>
                             <Input id={`${prefix}-quantity`} min={1} onChange={(event) => updateResource(resource.id, "quantity", Math.max(1, Number(event.target.value)))} type="number" value={resource.quantity} />
                           </div>
                         </div>
-                        <div className="space-y-2">
-                          <FieldLabel htmlFor={`${prefix}-location`}>Location</FieldLabel>
+                        <div className="flex flex-col gap-3">
+                          <FieldLabel htmlFor={`${prefix}-location`}>Location <span className="font-normal text-zinc-600">(optional)</span></FieldLabel>
                           <Input id={`${prefix}-location`} onChange={(event) => updateResource(resource.id, "location", event.target.value)} placeholder="e.g. Floor 2, east wing" value={resource.location} />
                         </div>
                       </div>

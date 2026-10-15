@@ -4,21 +4,40 @@ import { Prisma, ReservationStatus } from "@/generated/prisma/client";
 import { addDaysToDateKey, zonedDateTimeToUtc } from "@/lib/datetime/timezone";
 import { prisma } from "@/lib/prisma";
 
-function getTimelineHours(shifts: Prisma.JsonValue) {
-  if (!Array.isArray(shifts) || shifts.length === 0) return { startHour: 8, endHour: 20 };
+interface TimelineShift {
+  name: string;
+  start: string;
+  end: string;
+}
+
+const defaultTimelineShifts: TimelineShift[] = [
+  { name: "Working hours", start: "08:00", end: "20:00" },
+];
+
+function parseTimelineShifts(shifts: Prisma.JsonValue) {
+  if (!Array.isArray(shifts) || shifts.length === 0) return defaultTimelineShifts;
 
   const parsed = shifts.flatMap((shift) => {
     if (!shift || typeof shift !== "object" || Array.isArray(shift)) return [];
+    const name = "name" in shift && typeof shift.name === "string" ? shift.name : null;
     const start = "start" in shift && typeof shift.start === "string" ? shift.start : null;
     const end = "end" in shift && typeof shift.end === "string" ? shift.end : null;
-    if (!start || !end) return [];
-    const startValue = Number(start.split(":")[0]);
-    const rawEnd = Number(end.split(":")[0]) + (Number(end.split(":")[1]) > 0 ? 1 : 0);
-    const endValue = rawEnd <= startValue ? 24 : rawEnd;
-    return [{ start: startValue, end: endValue }];
+    if (!name || !start || !end) return [];
+    return [{ name, start, end }];
   });
 
-  if (parsed.length === 0) return { startHour: 8, endHour: 20 };
+  const shiftOrder = new Map([["Morning", 0], ["Evening", 1], ["Night", 2]]);
+  return parsed.length > 0
+    ? parsed.sort((first, second) => (shiftOrder.get(first.name) ?? 3) - (shiftOrder.get(second.name) ?? 3))
+    : defaultTimelineShifts;
+}
+
+function getTimelineHours(shifts: TimelineShift[]) {
+  const parsed = shifts.map((shift) => {
+    const start = Number(shift.start.split(":")[0]);
+    const rawEnd = Number(shift.end.split(":")[0]) + (Number(shift.end.split(":")[1]) > 0 ? 1 : 0);
+    return { start, end: rawEnd <= start ? 24 : rawEnd };
+  });
   const startHour = Math.max(0, Math.min(...parsed.map((shift) => shift.start)));
   const endHour = Math.min(24, Math.max(...parsed.map((shift) => shift.end)));
   return endHour - startHour >= 4 ? { startHour, endHour } : { startHour: 8, endHour: 20 };
@@ -40,6 +59,7 @@ export async function getReservationSchedule({
   const startOfDay = zonedDateTimeToUtc(dateKey, "00:00", organization.timezone);
   const endOfDay = zonedDateTimeToUtc(addDaysToDateKey(dateKey, 1), "00:00", organization.timezone);
   const now = new Date();
+  const shifts = parseTimelineShifts(organization.shifts);
 
   const [resources, reservations, people] = await Promise.all([
     prisma.resource.findMany({
@@ -65,7 +85,7 @@ export async function getReservationSchedule({
       select: {
         id: true,
         purpose: true,
-        attendeeCount: true,
+        resourceUnit: true,
         startTime: true,
         endTime: true,
         status: true,
@@ -84,7 +104,7 @@ export async function getReservationSchedule({
   const serializedReservations = reservations.map((reservation) => ({
     id: reservation.id,
     purpose: reservation.purpose ?? "Reserved",
-    attendeeCount: reservation.attendeeCount,
+    resourceUnit: reservation.resourceUnit,
     startTime: reservation.startTime.toISOString(),
     endTime: reservation.endTime.toISOString(),
     status: reservation.status,
@@ -96,7 +116,8 @@ export async function getReservationSchedule({
 
   return {
     timezone: organization.timezone,
-    ...getTimelineHours(organization.shifts),
+    shifts,
+    ...getTimelineHours(shifts),
     resources: resources.map((resource) => ({
       id: resource.id,
       name: resource.name,

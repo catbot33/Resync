@@ -16,7 +16,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import type { CalendarView } from "@/lib/dashboard/calendar";
-import { addDaysToDateKey, startOfWeekDateKey } from "@/lib/datetime/timezone";
+import { addDaysToDateKey, relativeDateLabel, startOfWeekDateKey } from "@/lib/datetime/timezone";
 
 interface CalendarResource {
   id: string;
@@ -29,7 +29,7 @@ interface CalendarResource {
 interface CalendarReservation {
   id: string;
   purpose: string;
-  attendeeCount: number;
+  resourceUnit: number;
   startTime: string;
   endTime: string;
   status: string;
@@ -112,7 +112,7 @@ function BookingCard({
       <span className="block truncate text-xs font-semibold text-zinc-100">{privateBooking ? "Unavailable" : reservation.purpose}</span>
       <span className={`mt-1 block truncate text-[11px] text-zinc-500 ${compact ? "" : "sm:text-xs"}`}>
         {formatTime(reservation.startTime, timezone)}–{formatTime(reservation.endTime, timezone)}
-        {!compact && ` · ${reservation.resourceName}`}
+        {!compact && ` · ${reservation.resourceName}${reservation.resourceQuantity > 1 ? ` · Unit ${reservation.resourceUnit}` : ""}`}
       </span>
     </button>
   );
@@ -152,7 +152,7 @@ export function ReservationCalendar({ basePath = "/dashboard/calendar", dateKey,
     ? formatDateKey(dateKey, { month: "long", year: "numeric" })
     : view === "week"
       ? `${formatDateKey(weekStart, { month: "short", day: "numeric" })} – ${formatDateKey(addDaysToDateKey(weekStart, 6), { month: "short", day: "numeric", year: "numeric" })}`
-      : formatDateKey(dateKey, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+      : relativeDateLabel(dateKey, todayKey) ?? formatDateKey(dateKey, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
   return (
     <section className="pt-7">
@@ -333,7 +333,7 @@ function DayView({ dateKey, memberMode, onSelect, reservations, resources, timez
               <div className="w-24 shrink-0 text-xs font-medium text-zinc-300">{formatTime(reservation.startTime, timezone)}</div>
               <div className="min-w-0 flex-1 border-l border-[#343941] pl-4">
                 <p className="truncate text-sm font-semibold text-zinc-100">{memberMode && !reservation.isMine ? "Unavailable" : reservation.purpose}</p>
-                <p className="mt-1 truncate text-xs text-zinc-500">{reservation.resourceName}{!memberMode || reservation.isMine ? ` · ${reservation.userName}` : ""}</p>
+                <p className="mt-1 truncate text-xs text-zinc-500">{reservation.resourceName}{reservation.resourceQuantity > 1 ? ` · Unit ${reservation.resourceUnit}` : ""}{!memberMode || reservation.isMine ? ` · ${reservation.userName}` : ""}</p>
               </div>
               <span className="hidden text-xs text-zinc-600 sm:block">until {formatTime(reservation.endTime, timezone)}</span>
             </button>
@@ -389,10 +389,9 @@ function BookingDetails({ manageHref, onClose, reservation, timezone }: {
         <div className="flex-1 space-y-3 overflow-y-auto p-6">
           <DetailRow icon={CalendarDays} label="Date" value={formatDateKey(bookingDate, { weekday: "long", month: "long", day: "numeric" })} />
           <DetailRow icon={Clock3} label="Time" value={`${formatTime(reservation.startTime, timezone)} – ${formatTime(reservation.endTime, timezone)}`} />
-          <DetailRow icon={CalendarDays} label="Resource" value={reservation.resourceName} />
+          <DetailRow icon={CalendarDays} label="Resource" value={`${reservation.resourceName}${reservation.resourceQuantity > 1 ? ` · Unit ${reservation.resourceUnit}` : ""}`} />
           <DetailRow icon={MapPin} label="Location" value={reservation.resourceLocation || "No location set"} />
           <DetailRow icon={UsersRound} label="Reserved by" value={reservation.userName} />
-          <DetailRow icon={UsersRound} label="Attendees" value={`${reservation.attendeeCount} of ${reservation.resourceQuantity}`} />
           <div className="mt-5 flex items-center justify-between rounded-xl border border-[#2e3238] bg-[#181a1d] p-4">
             <span className="text-xs text-zinc-500">Status</span>
             <span className="rounded-lg bg-[#292d32] px-2.5 py-1 text-[11px] font-medium capitalize text-zinc-300">{reservation.status.toLowerCase()}</span>

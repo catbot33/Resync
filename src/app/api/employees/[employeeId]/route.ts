@@ -45,3 +45,28 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return Response.json({ message: "We could not update the employee." }, { status: 500 });
   }
 }
+
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  const context = await getAdminOrganization();
+  if (!context.ok) {
+    return Response.json({ message: context.error }, { status: context.status });
+  }
+
+  const { employeeId } = await params;
+  const employee = await prisma.user.findFirst({
+    where: { id: employeeId, organizationId: context.organizationId, role: UserRole.MEMBER },
+    select: { id: true, _count: { select: { reservations: true } } },
+  });
+
+  if (!employee) {
+    return Response.json({ message: "Employee not found." }, { status: 404 });
+  }
+
+  // Preserve historical bookings and their audit trail.
+  if (employee._count.reservations > 0) {
+    return Response.json({ message: "This employee has reservation history. Deactivate the account instead." }, { status: 409 });
+  }
+
+  await prisma.user.delete({ where: { id: employee.id } });
+  return new Response(null, { status: 204 });
+}
